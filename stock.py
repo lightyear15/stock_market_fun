@@ -3,9 +3,10 @@ import datetime
 import pandas_datareader as pdr
 import fix_yahoo_finance
 import os
+import numpy as np
 
 PRICE_REFERENCE = "Close"
-DEFAULT_ARCHIVE_FOLER = "./stocks/"
+DEFAULT_ARCHIVE_FOLDER = "./stocks/"
 
 class Stock():
     def __init__(self,stock_name, data, start = None, end = None):
@@ -24,6 +25,8 @@ class Stock():
     def set_dates(self, start, end):
         self.start = start
         self.end = end
+        data_range = pandas.date_range(start, end)
+        self.data = self.data.reindex(data_range, method="ffill")
     def join(self, stock_obj):
         if stock_obj is None:
             return
@@ -50,7 +53,8 @@ def download_data(stock_name, start, end):
         print (e)
         return None
 
-def get_stock_data(stock_name_list, start, end, archive_path = DEFAULT_ARCHIVE_FOLER):
+def get_stock_data(stock_name_list, start, end, archive_path = DEFAULT_ARCHIVE_FOLDER,
+        downloadable=False):
     stock_list = []
     for stock_name in stock_name_list:
         stock = None
@@ -66,15 +70,17 @@ def get_stock_data(stock_name_list, start, end, archive_path = DEFAULT_ARCHIVE_F
                 end_date = stock.get_first_day()
             stock.set_dates(start, end)
         new_data = None
-        if start_date < end_date:
+        if start_date < end_date and downloadable:
             new_data = download_data (stock_name, start_date, end_date)
         if stock and new_data:
             stock.join(new_data)
         elif new_data:
             stock = new_data
         if stock and len(stock.data.index) > 0:
+            stock.set_dates(start, end)
             stock_list.append(stock)
-            stock.data.to_csv(stock_abs_fname)
+            if downloadable and new_data:
+                stock.data.to_csv(stock_abs_fname)
     return stock_list
 
 def get_rr_from_stock_list(stocks):
@@ -86,7 +92,6 @@ def get_rr_from_stock_list(stocks):
         if stock.get_first_day() != start and stock.get_last_day() != end:
             raise Error ("Dates do not match")
         prices[stock.get_name()] = stock.get_prices()
-    prices.fillna(method="ffill", inplace=True)
     prices_i = prices.iloc[:-1]
     prices_i_1 = prices.iloc[1:]
     rr = np.divide(prices_i_1.as_matrix() - prices_i.as_matrix(), prices_i.as_matrix()) * 100
@@ -97,3 +102,15 @@ def get_rr_from_stock_list(stocks):
 
 def get_fname_from_stock(stock_name):
     return stock_name + ".csv"
+
+def get_stocks_with_biggest_dataset(count=10):
+    file_list = os.listdir(DEFAULT_ARCHIVE_FOLDER)
+    file_list = sorted(file_list, 
+            key=lambda x: os.path.getsize(os.path.join(DEFAULT_ARCHIVE_FOLDER, x)), 
+            reverse = True)
+    file_list = file_list[:count]
+    return [os.path.splitext(file)[0] for file in file_list]
+
+
+if __name__ == "__main__":
+    print get_stocks_with_biggest_dataset()
