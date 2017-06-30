@@ -1,24 +1,27 @@
 from stock import *
-from etf_info_extractor import *
+# from etf_info_extractor import *
 import datetime
+import pandas
 
-etf_info = extract_etf_data(50)
+# etf_info = extract_etf_data(300)
+# etf_info.to_csv("etf_italy.csv")
+etf_info = pandas.read_csv("etf_italy.csv")
 
 
 for idx in etf_info.index:
-    print idx
     etf = etf_info.loc[idx]
-    ref_date = etf["Prezzo di riferimento"][0]
+
+    print (etf["Codice Alfanumerico"])
+
+    ref_date = datetime.datetime.strptime(etf["Prezzo di riferimento"][0], ""
     ref_price = etf["Prezzo di riferimento"][1]
-    print idx, etf["Codice Alfanumerico"], ref_date, ref_price
-    stocks = get_stock_data([etf["Codice Alfanumerico"]], datetime.datetime(2017,5,1),ref_date + datetime.timedelta(days=2))
+    stocks = get_stock_data([etf["Codice Alfanumerico"]], datetime.datetime(2012,1,1),ref_date + datetime.timedelta(days=2))
     if len(stocks) > 0:
         try:
             price = stocks[0].get_prices().loc[etf["Prezzo di riferimento"][0].date()]
-            print str(ref_price) + " ?= " + str(price)
+            mode = raw_input("check this")
         except Exception as e:
-            print "etf not corresponding"
-            print str(ref_date) + " != \n" + str(stocks[0].get_prices())
+            print (e)
 
 #stock_list = get_stock_data(etf_codes, datetime.datetime(2017,1,1), datetime.datetime(2017,2,1))
 

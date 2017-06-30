@@ -19,18 +19,23 @@ def extract_etf_data( max_etfs=-1):
             etf_soup = BS(link_html)
             etf_name = etf_soup.find("h1").find("a").contents[0]
             etf_data = {}
+            discard_etf = False
             for table in etf_soup.findAll("table"):
                 for row in table.findAll("tr"):
                     key = None
                     for cell in row.findAll("td"):
                         if key:
-                            code = extract_info_from_cell(key, str(cell))
-                            etf_data[key] = code
-                            key = None
+                            try:
+                                code = extract_info_from_cell(key, str(cell))
+                                etf_data[key] = code
+                                key = None
+                            except Exception as e:
+                                discard_etf = True
                         for elem in COLUMNS:
                             if elem in str(cell):
                                 key = elem
-            etfs[etf_name] = etf_data
+            if not discard_etf:
+                etfs[etf_name] = etf_data
             if max_etfs > 0 and len(etfs) >= max_etfs:
                 break;
         if max_etfs > 0 and len(etfs) >= max_etfs:

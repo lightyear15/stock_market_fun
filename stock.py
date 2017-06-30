@@ -1,6 +1,7 @@
 import pandas
 import datetime
 import pandas_datareader as pdr
+import fix_yahoo_finance
 import os
 
 PRICE_REFERENCE = "Close"
@@ -41,12 +42,12 @@ class Stock():
 
 def download_data(stock_name, start, end):
     try:
-        temp = pdr.DataReader(stock_name, "google", start, end)
+        temp = pdr.get_data_yahoo(stock_name, start, end)
         temp.fillna(method="ffill", inplace=True)
         stock = Stock(stock_name, temp, start, end)
         return stock
     except Exception as e:
-        print e
+        print (e)
         return None
 
 def get_stock_data(stock_name_list, start, end, archive_path = DEFAULT_ARCHIVE_FOLER):
